@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Käsikirjoitustyökalu – EduMedia</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
+  .topbar{background:#fff;border-bottom:1px solid #e0e0dc;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+  .topbar h1{font-size:16px;font-weight:600;color:#1a1a1a}
+  .topbar span{font-size:12px;color:#888}
+  .container{max-width:820px;margin:0 auto;padding:24px 16px}
+  .api-bar{background:#fff8e7;border:1px solid #f0c040;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .api-bar.ok{background:#e8f5e9;border-color:#66bb6a}
+  .api-bar span{font-size:13px;color:#7a5800;flex:1;min-width:140px}
+  .api-bar.ok span{color:#2e7d32}
+  .api-bar input{flex:2;min-width:200px;padding:7px 11px;border:1px solid #f0c040;border-radius:7px;font-size:13px;font-family:inherit;background:#fff}
+  .api-bar button{padding:7px 14px;background:#b45309;color:#fff;border:none;border-radius:7px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap}
+  .api-bar button:hover{background:#92400e}
+  .steps{display:flex;background:#fff;border:1px solid #e0e0dc;border-radius:10px;overflow:hidden;margin-bottom:20px}
+  .stab{flex:1;padding:10px 6px;text-align:center;font-size:12px;cursor:pointer;background:#fff;color:#888;border:none;border-right:1px solid #e0e0dc;font-family:inherit;transition:background 0.15s;line-height:1.4}
+  .stab:last-child{border-right:none}
+  .stab .sn{display:block;font-size:10px;color:#bbb;margin-bottom:2px}
+  .stab.active{background:#f0f4ff;color:#1a3a8f;font-weight:600}
+  .stab.active .sn{color:#4a6cf7}
+  .stab.done{color:#2e7d32}
+  .stab.done .sn{color:#66bb6a}
+  .stab:hover:not(.active){background:#f9f9f7}
+  .card{background:#fff;border:1px solid #e0e0dc;border-radius:12px;padding:20px;margin-bottom:16px}
+  .card h2{font-size:16px;font-weight:600;margin-bottom:6px;color:#1a1a1a}
+  .hint{font-size:13px;color:#666;margin-bottom:14px;line-height:1.6}
+  .eg{background:#f5f5f3;border-left:3px solid #d0d0cc;padding:8px 12px;font-size:12px;color:#666;margin-bottom:10px;line-height:1.5;border-radius:0 6px 6px 0}
+  .lbl{display:block;font-size:13px;color:#555;margin:12px 0 4px;font-weight:500}
+  input[type=text],select{width:100%;padding:9px 11px;border:1px solid #ddd;border-radius:7px;font-size:14px;font-family:inherit;background:#fafafa;color:#1a1a1a;transition:border-color 0.15s}
+  input[type=text]:focus,select:focus,textarea:focus{outline:none;border-color:#4a6cf7;background:#fff}
+  input[type=number]{width:80px;padding:9px 11px;border:1px solid #ddd;border-radius:7px;font-size:14px;font-family:inherit;background:#fafafa;color:#1a1a1a}
+  input[type=number]:focus{outline:none;border-color:#4a6cf7;background:#fff}
+  textarea{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:7px;font-size:14px;font-family:inherit;background:#fafafa;color:#1a1a1a;resize:vertical;line-height:1.6;transition:border-color 0.15s}
+  .r2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:520px){.r2{grid-template-columns:1fr}}
+  .btn{padding:9px 16px;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid #ddd;background:#fff;color:#1a1a1a;font-family:inherit;transition:all 0.15s}
+  .btn:hover{background:#f5f5f3;border-color:#bbb}
+  .btn-blue{background:#1a3a8f;color:#fff;border-color:#1a3a8f}
+  .btn-blue:hover{background:#152e72}
+  .btn-teal{background:#0f6e56;color:#fff;border-color:#0f6e56}
+  .btn-teal:hover{background:#085041}
+  .btn-purple{background:#534ab7;color:#fff;border-color:#534ab7}
+  .btn-purple:hover{background:#3c3489}
+  .brow{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center}
+  .ai-box{background:#e8f0fe;border:1px solid #a8c4f8;border-radius:10px;padding:14px 16px;margin-top:14px}
+  .ai-title{font-size:12px;font-weight:600;color:#1a3a8f;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.3px}
+  .ai-content{font-size:13px;color:#1a1a1a;line-height:1.75;white-space:pre-wrap}
+  .gen-box{background:#f0eeff;border:1px solid #c4b8f8;border-radius:12px;padding:20px;margin-bottom:16px}
+  .gen-box h3{font-size:15px;font-weight:600;color:#3c3489;margin-bottom:6px}
+  .err{background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin-top:10px;font-size:13px;color:#991b1b;line-height:1.5}
+  .shot-card{background:#f9f9f7;border:1px solid #e8e8e4;border-radius:8px;padding:14px;margin-bottom:10px}
+  .shot-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .shot-num{font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.3px}
+  .del{font-size:11px;padding:4px 9px;border-radius:6px;cursor:pointer;border:1px solid #ddd;background:transparent;color:#999;font-family:inherit;transition:all 0.15s}
+  .del:hover{color:#dc2626;border-color:#dc2626;background:#fef2f2}
+  .sc-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .chk{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid #f0f0ec;font-size:13px;line-height:1.5}
+  .chk:last-child{border-bottom:none}
+  .chk input{margin-top:2px;flex-shrink:0;width:15px;height:15px;cursor:pointer}
+  .chk label{cursor:pointer;color:#1a1a1a}
+  .save-row{display:flex;gap:8px;align-items:center;padding:14px;background:#fff;border:1px solid #e0e0dc;border-radius:10px;margin-top:16px;flex-wrap:wrap}
+  .save-lbl{font-size:13px;color:#666;flex:1;min-width:140px}
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;margin-left:6px}
+  .badge-blue{background:#e8f0fe;color:#1a3a8f}
+  .badge-green{background:#e8f5e9;color:#2e7d32}
+  .lds::after{content:'.';animation:ld 1s infinite steps(3)}
+  @keyframes ld{0%{content:'.'}33%{content:'..'}66%{content:'...'}}
+  hr{border:none;border-top:1px solid #eee;margin:14px 0}
+  .success-box{background:#e8f5e9;border:1px solid #66bb6a;border-radius:10px;padding:14px 16px;margin-top:14px}
+  .success-box .ai-title{color:#2e7d32}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Käsikirjoitustyökalu <span class="badge badge-blue">EduMedia</span></h1>
+  <span>Mayerin periaatteet + AI-analyysi</span>
+</div>
+
+<div class="container">
+
+  <div class="api-bar" id="apiBar">
+    <span id="apiSt">Anna Anthropic API-avain AI-toimintoja varten</span>
+    <input type="password" id="apiInp" placeholder="sk-ant-..." autocomplete="off">
+    <button onclick="setKey()">Tallenna avain</button>
+  </div>
+
+  <div class="steps" id="tabs"></div>
+  <div id="main"></div>
+
+  <div class="save-row">
+    <span class="save-lbl">Tallenna työ tiedostoon tai lataa aiempi istunto</span>
+    <button class="btn" onclick="savePrj()">&#8595; Tallenna JSON</button>
+    <label class="btn" style="cursor:pointer;margin:0">&#8593; Lataa tiedosto<input type="file" accept=".json" style="display:none" onchange="loadPrj(event)"></label>
+  </div>
+
+</div>
+
+<script>
+const KUVAKOOT=['YK (yleiskuva)','KK (kokokuva)','PK (puolikuva)','PLK (puolilähikuva)','LK (lähikuva)','ELK (erikoislähikuva)','GRAFIIKKA','RUUTUKAAPPAUS'];
+const CL_ITEMS=['Oppimistavoite on konkreettinen','Kohtaukset ovat loogisessa järjestyksessä','Jokainen kuva on perusteltu','Puhe ja kuva ovat synkronissa','Kuvakoot vaihtelevat tarkoituksella','Turhat elementit on karsittu','Käsitteet esitellään johdannossa','Ruututeksti ei toista puhetta','Puhetyyli on keskustelunomainen','Yhteenveto kertaa pääkohdat','Kokonaiskesto on alle 6 min','Olen lukenut käsikirjoituksen ääneen'];
+const TABS=['1. Perustiedot','2. AI-generointi','3. Synopsis','4. Kohtaukset','5. Analyysi'];
+
+let KEY='';
+let S={
+  step:0,
+  p:{nimi:'',tekija:'',pvm:'',kohde:'',tavoite:'',kesto:'5'},
+  g:{aihe:'',taso:'aloittelija',tyyli:'rento ja kannustava',ympa:'',muuta:''},
+  syn:{ydin:'',etene:'',ympa:''},
+  scenes:[
+    {id:1,nimi:'Johdanto',kmin:30,kmax:45,shots:[{id:1,koko:'PK (puolikuva)',sis:'',aani:'',huom:''}]},
+    {id:5,nimi:'Yhteenveto',kmin:30,kmax:45,shots:[{id:1,koko:'PK (puolikuva)',sis:'',aani:'',huom:''}]}
+  ],
+  cl:Array(12).fill(false),
+  ai:{syn:'',synErr:'',scenes:{},scErr:{},final:'',finalErr:'',genDone:false,genErr:''},
+  ld:{}
+};
+
+function sv(){try{localStorage.setItem('ks_edumedia',JSON.stringify(S))}catch(e){}}
+function ldS(){try{const d=localStorage.getItem('ks_edumedia');if(d)S=JSON.parse(d)}catch(e){}}
+function ldK(){try{const k=localStorage.getItem('ks_edumedia_key');if(k){KEY=k;updBar()}}catch(e){}}
+ldS();ldK();
+
+function setKey(){
+  const k=document.getElementById('apiInp').value.trim();
+  if(!k)return;
+  KEY=k;
+  try{localStorage.setItem('ks_edumedia_key',k)}catch(e){}
+  document.getElementById('apiInp').value='';
+  updBar();
+}
+
+function updBar(){
+  const bar=document.getElementById('apiBar');
+  const st=document.getElementById('apiSt');
+  if(!bar||!st)return;
+  if(KEY&&KEY.length>10){
+    bar.className='api-bar ok';
+    st.textContent='&#10003; API-avain tallennettu – AI-toiminnot aktiivisia';
+  }
+}
+
+function savePrj(){
+  const b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download=(S.p.nimi||'kasikirjoitus')+'_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+}
+function loadPrj(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{try{S=JSON.parse(ev.target.result);sv();render()}catch(x){alert('Virheellinen tiedosto')}};
+  r.readAsText(f);
+}
+
+async function callAI(prompt,maxTok){
+  if(!KEY)throw new Error('API-avain puuttuu – anna se yläreunan kentässä');
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':KEY,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body:JSON.stringify({
+      model:'claude-haiku-4-5-20251001',
+      max_tokens:maxTok||1000,
+      messages:[{role:'user',content:prompt}]
+    })
+  });
+  if(!resp.ok){
+    let msg='API-virhe '+resp.status;
+    try{const j=await resp.json();msg=j.error?.message||msg}catch(e){}
+    throw new Error(msg);
+  }
+  const d=await resp.json();
+  return d.content?.[0]?.text||'';
+}
+
+function go(i){saveScenes();S.step=i;sv();render();}
+
+function render(){
+  const tabs=document.getElementById('tabs');
+  if(tabs)tabs.innerHTML=TABS.map((t,i)=>`<button class="stab${S.step===i?' active':''}${i<S.step?' done':''}" onclick="go(${i})"><span class="sn">${i<S.step?'&#10003;':'vaihe '+(i+1)}</span>${t.replace(/^\d+\. /,'')}</button>`).join('');
+  const m=document.getElementById('main');
+  if(!m)return;
+  if(S.step===0)m.innerHTML=pgP();
+  else if(S.step===1)m.innerHTML=pgG();
+  else if(S.step===2)m.innerHTML=pgSyn();
+  else if(S.step===3)m.innerHTML=pgSc();
+  else m.innerHTML=pgA();
+  updBar();
+}
+
+// --- PERUSTIEDOT ---
+function pgP(){
+  const p=S.p;
+  return `<div class="card">
+    <h2>Perustiedot</h2>
+    <p class="hint">Täytä videon perustiedot ensin. Nämä ohjaavat AI-generointia ja analyysiä.</p>
+    <span class="lbl">Videon nimi</span>
+    <input type="text" id="p0" value="${e(p.nimi)}" placeholder="esim. Peruskestävyys ja aerobinen kynnys">
+    <div class="r2">
+      <div><span class="lbl">Tekijä</span><input type="text" id="p1" value="${e(p.tekija)}" placeholder="Nimi"></div>
+      <div><span class="lbl">Päivämäärä</span><input type="text" id="p2" value="${e(p.pvm)}" placeholder="pp.kk.vvvv"></div>
+    </div>
+    <span class="lbl">Kohderyhmä</span>
+    <input type="text" id="p3" value="${e(p.kohde)}" placeholder="esim. Liikunnanohjaaja-opiskelijat, 1. vuosi">
+    <span class="lbl">Oppimistavoite – mitä oppija osaa videon jälkeen?</span>
+    <textarea id="p4" rows="3" placeholder="esim. Opiskelija osaa selittää peruskestävyyden merkityksen ja tunnistaa oman sykealueensa.">${e(p.tavoite)}</textarea>
+    <span class="lbl">Tavoitekesto (minuuttia, suositus max 8 min)</span>
+    <input type="number" id="p5" value="${e(p.kesto)}" min="1" max="20">
+    <div class="brow">
+      <button class="btn btn-blue" onclick="saveP()">Tallenna ja jatka &#8594;</button>
+    </div>
+  </div>`;
+}
+function saveP(){
+  S.p={nimi:v('p0'),tekija:v('p1'),pvm:v('p2'),kohde:v('p3'),tavoite:v('p4'),kesto:v('p5')};
+  S.step=1;sv();render();
+}
+
+// --- AI-GENEROINTI ---
+function pgG(){
+  const g=S.g;const ld=S.ld.gen;const done=S.ai.genDone;const err=S.ai.genErr;
+  return `<div>
+    <div class="gen-box">
+      <h3>Luo käsikirjoitus tekoälyllä</h3>
+      <p class="hint" style="color:#3c3489">Vastaa kysymyksiin – AI generoi täydellisen käsikirjoituspohjan Mayerin periaatteiden mukaan. Voit muokata kaikkea jälkikäteen.</p>
+      <span class="lbl" style="color:#3c3489">Mistä aiheesta video kertoo tarkemmin?</span>
+      <textarea id="g0" rows="2" placeholder="esim. Peruskestävyystreeni: mitä tapahtuu kehossa matalalla sykkeellä, miten seurata omaa sykettä">${e(g.aihe)}</textarea>
+      <span class="lbl" style="color:#3c3489">Opiskelijoiden tietotaso aiheesta</span>
+      <select id="g1">
+        <option ${g.taso==='aloittelija'?'selected':''}>aloittelija</option>
+        <option ${g.taso==='perusteet hallussa'?'selected':''}>perusteet hallussa</option>
+        <option ${g.taso==='edistynyt'?'selected':''}>edistynyt</option>
+      </select>
+      <span class="lbl" style="color:#3c3489">Videon tyyli</span>
+      <select id="g2">
+        <option ${g.tyyli==='rento ja kannustava'?'selected':''}>rento ja kannustava</option>
+        <option ${g.tyyli==='asiantunteva ja selkeä'?'selected':''}>asiantunteva ja selkeä</option>
+        <option ${g.tyyli==='innostava ja energinen'?'selected':''}>innostava ja energinen</option>
+      </select>
+      <span class="lbl" style="color:#3c3489">Kuvausympäristö</span>
+      <input type="text" id="g3" value="${e(g.ympa)}" placeholder="esim. Ulkona lenkkipolulla, liikuntasalissa + grafiikka">
+      <span class="lbl" style="color:#3c3489">Erityistoiveet</span>
+      <textarea id="g4" rows="2" placeholder="esim. Sisällytä käytännön harjoitus, vältä latinalaisia termejä">${e(g.muuta)}</textarea>
+      <div class="brow">
+        <button class="btn btn-purple" onclick="genScript()">${ld?'<span class="lds">Generoidaan</span>':'&#10024; Generoi käsikirjoitus'}</button>
+        <button class="btn" onclick="go(2)">Ohita – kirjoitan itse &#8594;</button>
+      </div>
+      ${err?`<div class="err">${e(err)}</div>`:''}
+    </div>
+    ${done?`<div class="success-box">
+      <div class="ai-title">&#10003; Käsikirjoitus generoitu onnistuneesti</div>
+      <p style="font-size:13px;line-height:1.6;color:#1a1a1a;margin-bottom:12px">Synopsis ja kohtaukset on täytetty vastauksiesi pohjalta. Voit muokata kaikkea vapaasti seuraavissa vaiheissa.</p>
+      <div class="brow">
+        <button class="btn btn-blue" onclick="go(2)">Muokkaa synopsista &#8594;</button>
+        <button class="btn btn-teal" onclick="go(3)">Siirry suoraan kohtauksiin &#8594;</button>
+      </div>
+    </div>`:''}
+  </div>`;
+}
+
+async function genScript(){
+  const g=S.g;
+  g.aihe=v('g0');g.taso=v('g1');g.tyyli=v('g2');g.ympa=v('g3');g.muuta=v('g4');
+  if(!KEY){S.ai.genErr='Anna ensin API-avain yläreunan kentässä.';sv();render();return;}
+  if(!g.aihe.trim()){S.ai.genErr='Kirjoita ensin aihe ensimmäiseen kenttään.';sv();render();return;}
+  S.ld.gen=true;S.ai.genErr='';S.ai.genDone=false;sv();render();
+  const p=S.p;
+  const prompt=`Olet pedagogisen opetusvideokäsikirjoituksen asiantuntija. Luo täydellinen käsikirjoitus tiukasti Mayerin 12 multimediaoppimisen periaatetta noudattaen.
+
+PERUSTIEDOT:
+Videon nimi: ${p.nimi||g.aihe}
+Kohderyhmä: ${p.kohde||'liikunnanopiskelijat'}
+Oppimistavoite: ${p.tavoite||'opiskelija oppii aiheen perusteet'}
+Kesto: ${p.kesto||5} min
+Aihe tarkemmin: ${g.aihe}
+Tietotaso: ${g.taso}
+Tyyli: ${g.tyyli}
+Kuvausympäristö: ${g.ympa||'sisätila + grafiikka'}
+Erityistoiveet: ${g.muuta||'-'}
+
+Vastaa VAIN validilla JSON-objektilla ilman mitään muuta tekstiä tai markdown-merkkejä:
+{"synopsis":{"ydin":"...","etene":"...","ympa":"..."},"scenes":[{"id":1,"nimi":"Johdanto","kmin":30,"kmax":45,"shots":[{"id":1,"koko":"PK (puolikuva)","sis":"...","aani":"...","huom":"Mayer: Esiharjoittelu – ..."}]},{"id":2,"nimi":"...","kmin":60,"kmax":120,"shots":[{"id":1,"koko":"GRAFIIKKA","sis":"...","aani":"...","huom":"Mayer: ..."},{"id":2,"koko":"PK (puolikuva)","sis":"...","aani":"...","huom":"Mayer: ..."}]},{"id":3,"nimi":"...","kmin":60,"kmax":120,"shots":[{"id":1,"koko":"LK (lähikuva)","sis":"...","aani":"...","huom":"Mayer: ..."},{"id":2,"koko":"PK (puolikuva)","sis":"...","aani":"...","huom":"Mayer: ..."}]},{"id":5,"nimi":"Yhteenveto","kmin":30,"kmax":45,"shots":[{"id":1,"koko":"GRAFIIKKA","sis":"...","aani":"...","huom":"Mayer: Kertaus – ..."},{"id":2,"koko":"PK (puolikuva)","sis":"...","aani":"...","huom":"Mayer: Kuvaperiaate – ..."}]}]}
+
+Säännöt:
+- Johdanto (id:1) ja Yhteenveto (id:5) aina mukana + 2-3 sisältökohtausta
+- Jokaisessa kohtauksessa 2-4 kuvaa
+- Kuvakoot: YK, KK, PK, PLK, LK, ELK, GRAFIIKKA tai RUUTUKAAPPAUS
+- huom-kenttään: konkreettinen Mayer-periaate nimeltä
+- aani-kenttään: oikea puheteksti lainausmerkeissä käyttäen sinä-muotoa
+- Rakenne: esiharjoittelu johdannossa, osittaminen kohtauksissa, kertaus lopussa`;
+
+  try{
+    const txt=await callAI(prompt,2000);
+    const clean=txt.replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(clean);
+    if(parsed.synopsis){
+      S.syn={ydin:parsed.synopsis.ydin||'',etene:parsed.synopsis.etene||'',ympa:parsed.synopsis.ympa||''};
+    }
+    if(parsed.scenes&&parsed.scenes.length>0)S.scenes=parsed.scenes;
+    S.ai.genDone=true;S.ai.genErr='';
+  }catch(ex){
+    S.ai.genErr='Virhe: '+ex.message+'. Tarkista API-avain ja internet-yhteys.';
+  }
+  S.ld.gen=false;sv();render();
+}
+
+// --- SYNOPSIS ---
+function pgSyn(){
+  const s=S.syn;const ld=S.ld.syn;const res=S.ai.syn;const err=S.ai.synErr;
+  return `<div class="card">
+    <h2>Synopsis</h2>
+    <p class="hint">Pohdi videota kokonaisuutena ennen kohtauksia. Voit muokata AI:n generoimaa tai kirjoittaa itse.</p>
+    <span class="lbl">Ydinajatus – tiivistä yhteen lauseeseen</span>
+    <div class="eg">esim. "Peruskestävyys on kaiken kuntoliikunnan pohja – opiskelija ymmärtää mitä kehossa tapahtuu matalalla sykkeellä."</div>
+    <textarea id="s0" rows="3" placeholder="Videon ydinajatus...">${e(s.ydin)}</textarea>
+    <span class="lbl">Miten tarina etenee?</span>
+    <div class="eg">esim. "Aloitetaan lenkkipolulla → selitetään peruskestävyys → sykeseuranta → lopussa haaste kokeilemaan."</div>
+    <textarea id="s1" rows="3" placeholder="Alku → keskikohta → loppu...">${e(s.etene)}</textarea>
+    <span class="lbl">Kuvausympäristö ja tyyli</span>
+    <div class="eg">esim. "Ulkona puistossa. Opettaja kävelee ja puhuu kameralle, väliin grafiikkaa. Rento, kannustava tyyli."</div>
+    <textarea id="s2" rows="3" placeholder="Missä kuvataan, millainen tyyli...">${e(s.ympa)}</textarea>
+    <div class="brow">
+      <button class="btn" onclick="saveSyn()">Tallenna</button>
+      <button class="btn btn-teal" onclick="doSynAi()">${ld?'<span class="lds">Analysoidaan</span>':'Analysoi Mayerin valossa &#8599;'}</button>
+      <button class="btn btn-blue" onclick="saveSynGo()">Jatka kohtauksiin &#8594;</button>
+    </div>
+    ${err?`<div class="err">${e(err)}</div>`:''}
+    ${res&&!ld?`<div class="ai-box"><div class="ai-title">AI-analyysi: synopsis</div><div class="ai-content">${e(res)}</div></div>`:''}
+  </div>`;
+}
+function saveSyn(){S.syn={ydin:v('s0'),etene:v('s1'),ympa:v('s2')};sv();}
+function saveSynGo(){saveSyn();S.step=3;sv();render();}
+async function doSynAi(){
+  saveSyn();
+  if(!KEY){S.ai.synErr='Anna ensin API-avain.';sv();render();return;}
+  S.ld.syn=true;S.ai.syn='';S.ai.synErr='';sv();render();
+  try{
+    const txt=await callAI(`Analysoi tämä opetusvideokäsikirjoituksen synopsis Mayerin periaatteiden valossa. Suomeksi, rakentavasti, kannustavasti.
+
+Nimi: ${S.p.nimi} | Kohderyhmä: ${S.p.kohde} | Tavoite: ${S.p.tavoite} | Kesto: ${S.p.kesto} min
+Ydinajatus: ${S.syn.ydin}
+Rakenne: ${S.syn.etene}
+Kuvaus: ${S.syn.ympa}
+
+Anna palaute: 1) Oppimistavoitteen selkeys 2) Rakenne vs. Osittaminen ja Esiharjoittelu 3) Ympäristö vs. Personointi ja Modaliteetti 4) Vahvuudet 5) Kehityskohteet`,900);
+    S.ai.syn=txt;
+  }catch(ex){S.ai.synErr='Virhe: '+ex.message;}
+  S.ld.syn=false;sv();render();
+}
+
+// --- KOHTAUKSET ---
+function pgSc(){
+  return `<div>${S.scenes.map(sc=>pgScene(sc)).join('')}
+    <div class="brow" style="margin-bottom:16px">
+      <button class="btn" onclick="addSc()">+ Lisää kohtaus</button>
+      <button class="btn btn-blue" onclick="go(4)">Valmis – siirry analyysiin &#8594;</button>
+    </div>
+  </div>`;
+}
+
+function pgScene(sc){
+  const ld=S.ld['sc'+sc.id];
+  const res=S.ai.scenes&&S.ai.scenes[sc.id];
+  const err=S.ai.scErr&&S.ai.scErr[sc.id];
+  const fixed=sc.id===1||sc.id===5;
+  return `<div class="card">
+    <div class="sc-hdr">
+      <h2 style="font-size:15px">Kohtaus ${sc.id}${sc.id===1?' – Johdanto':sc.id===5?' – Yhteenveto':''}</h2>
+      ${!fixed?`<button class="del" onclick="rmSc(${sc.id})">Poista kohtaus</button>`:''}
+    </div>
+    <div class="r2">
+      <div>
+        <span class="lbl">Kohtauksen nimi</span>
+        <input type="text" id="scn${sc.id}" value="${e(sc.nimi)}" placeholder="esim. Käsitteiden esittely">
+      </div>
+      <div>
+        <span class="lbl">Kesto (sekuntia)</span>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+          <input type="number" id="sca${sc.id}" value="${sc.kmin}" min="10" max="600">
+          <span style="font-size:13px;color:#888">–</span>
+          <input type="number" id="scb${sc.id}" value="${sc.kmax}" min="10" max="600">
+          <span style="font-size:13px;color:#888">sek</span>
+        </div>
+      </div>
+    </div>
+    <hr>
+    <p style="font-size:12px;font-weight:600;color:#888;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.3px">Kuvat</p>
+    ${sc.shots.map((sh,i)=>pgShot(sc.id,sh,i,sc.shots.length)).join('')}
+    <div class="brow">
+      <button class="btn" onclick="addSh(${sc.id})">+ Lisää kuva</button>
+      <button class="btn btn-teal" onclick="doScAi(${sc.id})">${ld?'<span class="lds">Analysoidaan</span>':'Analysoi kohtaus &#8599;'}</button>
+    </div>
+    ${err?`<div class="err">${e(err)}</div>`:''}
+    ${res&&!ld?`<div class="ai-box"><div class="ai-title">AI-analyysi: kohtaus ${sc.id}</div><div class="ai-content">${e(res)}</div></div>`:''}
+  </div>`;
+}
+
+function pgShot(scId,sh,i,tot){
+  return `<div class="shot-card">
+    <div class="shot-hdr">
+      <span class="shot-num">Kuva ${scId}.${i+1}</span>
+      ${tot>1?`<button class="del" onclick="rmSh(${scId},${sh.id})">Poista</button>`:''}
+    </div>
+    <div class="r2" style="margin-bottom:8px">
+      <div>
+        <span class="lbl">Kuvakoko</span>
+        <select id="shk${scId}_${sh.id}">${KUVAKOOT.map(k=>`<option${k===sh.koko?' selected':''}>${k}</option>`).join('')}</select>
+      </div>
+      <div>
+        <span class="lbl">Mayer-huomio</span>
+        <input type="text" id="shh${scId}_${sh.id}" value="${e(sh.huom)}" placeholder="esim. Ajallinen läheisyys: puhe synkassa">
+      </div>
+    </div>
+    <span class="lbl">Kuvan sisältö – mitä näkyy?</span>
+    <textarea id="shs${scId}_${sh.id}" rows="2" placeholder="esim. Opettaja kävelee puistossa, pysähtyy kameraan">${e(sh.sis)}</textarea>
+    <span class="lbl">Ääni / kerronta – mitä sanotaan?</span>
+    <textarea id="sha${scId}_${sh.id}" rows="2" placeholder='esim. "Tervetuloa! Tässä videossa opit..."'>${e(sh.aani)}</textarea>
+  </div>`;
+}
+
+function saveScenes(){
+  S.scenes.forEach(sc=>{
+    const n=document.getElementById('scn'+sc.id);if(n)sc.nimi=n.value;
+    const a=document.getElementById('sca'+sc.id);if(a)sc.kmin=parseInt(a.value)||sc.kmin;
+    const b=document.getElementById('scb'+sc.id);if(b)sc.kmax=parseInt(b.value)||sc.kmax;
+    sc.shots.forEach(sh=>{
+      const k=document.getElementById('shk'+sc.id+'_'+sh.id);if(k)sh.koko=k.value;
+      const s=document.getElementById('shs'+sc.id+'_'+sh.id);if(s)sh.sis=s.value;
+      const av=document.getElementById('sha'+sc.id+'_'+sh.id);if(av)sh.aani=av.value;
+      const h=document.getElementById('shh'+sc.id+'_'+sh.id);if(h)sh.huom=h.value;
+    });
+  });
+}
+
+function addSc(){
+  saveScenes();
+  const ids=S.scenes.map(s=>s.id);
+  let nid=2;while(ids.includes(nid))nid++;
+  const idx=S.scenes.findIndex(s=>s.id===5);
+  S.scenes.splice(idx,0,{id:nid,nimi:'',kmin:60,kmax:120,shots:[{id:1,koko:'PK (puolikuva)',sis:'',aani:'',huom:''}]});
+  sv();render();
+}
+function rmSc(id){if(!confirm('Poistetaanko kohtaus?'))return;S.scenes=S.scenes.filter(s=>s.id!==id);sv();render();}
+function addSh(scId){
+  saveScenes();
+  const sc=S.scenes.find(s=>s.id===scId);
+  const nid=Math.max(...sc.shots.map(s=>s.id))+1;
+  sc.shots.push({id:nid,koko:'PK (puolikuva)',sis:'',aani:'',huom:''});
+  sv();render();
+}
+function rmSh(scId,shId){
+  saveScenes();
+  const sc=S.scenes.find(s=>s.id===scId);
+  if(sc.shots.length<=1)return;
+  sc.shots=sc.shots.filter(s=>s.id!==shId);
+  sv();render();
+}
+
+async function doScAi(scId){
+  saveScenes();sv();
+  if(!KEY){if(!S.ai.scErr)S.ai.scErr={};S.ai.scErr[scId]='Anna ensin API-avain.';sv();render();return;}
+  S.ld['sc'+scId]=true;
+  if(!S.ai.scenes)S.ai.scenes={};S.ai.scenes[scId]='';
+  if(!S.ai.scErr)S.ai.scErr={};S.ai.scErr[scId]='';
+  sv();render();
+  const sc=S.scenes.find(s=>s.id===scId);
+  const shots=sc.shots.map((sh,i)=>`Kuva ${scId}.${i+1} [${sh.koko}]\n  Sisältö: ${sh.sis}\n  Ääni: ${sh.aani}\n  Mayer: ${sh.huom}`).join('\n\n');
+  try{
+    const txt=await callAI(`Analysoi opetusvideokäsikirjoituksen kohtaus Mayerin periaatteiden valossa. Suomeksi, rakentavasti, kannustavasti.
+
+Tavoite: ${S.p.tavoite}
+Kohtaus ${scId}: ${sc.nimi} (${sc.kmin}–${sc.kmax} sek)
+${shots}
+
+Analysoi: 1) Mitkä Mayer-periaatteet toteutuvat hyvin – erityisesti Ajallinen läheisyys, Tilallinen läheisyys, Päällekkäisyys, Merkitseminen, Modaliteetti 2) Kuvakoot pedagogisesti 3) Ääni/kuva-synkronia 4) Kaksi konkreettista parannusehdotusta`,900);
+    if(!S.ai.scenes)S.ai.scenes={};
+    S.ai.scenes[scId]=txt;
+  }catch(ex){
+    if(!S.ai.scErr)S.ai.scErr={};
+    S.ai.scErr[scId]='Virhe: '+ex.message;
+  }
+  S.ld['sc'+scId]=false;sv();render();
+}
+
+// --- ANALYYSI ---
+function pgA(){
+  const ld=S.ld.fin;const res=S.ai.final;const err=S.ai.finalErr;
+  const n=S.cl.filter(Boolean).length;
+  return `<div>
+    <div class="card">
+      <h2>Tarkistuslista</h2>
+      <p class="hint">Käy läpi ennen lopullista analyysiä.</p>
+      <div>${CL_ITEMS.map((it,i)=>`<div class="chk"><input type="checkbox" id="cl${i}" ${S.cl[i]?'checked':''} onchange="togCl(${i})"><label for="cl${i}">${it}</label></div>`).join('')}</div>
+      <p style="font-size:13px;color:#666;margin-top:12px">Valittuna: <strong>${n}</strong> / ${CL_ITEMS.length}</p>
+    </div>
+    <div class="card">
+      <h2>Kokonaisanalyysi</h2>
+      <p class="hint">AI analysoi koko käsikirjoituksen kaikkien 12 Mayer-periaatteen valossa ja antaa kehitysehdotukset.</p>
+      <div class="brow">
+        <button class="btn btn-teal" onclick="doFin()">${ld?'<span class="lds">Analysoidaan koko käsikirjoitusta</span>':'Analysoi koko käsikirjoitus &#8599;'}</button>
+      </div>
+      ${err?`<div class="err">${e(err)}</div>`:''}
+      ${res&&!ld?`<div class="ai-box" style="margin-top:14px"><div class="ai-title">Kokonaisanalyysi – Mayerin 12 periaatetta</div><div class="ai-content">${e(res)}</div></div>`:''}
+    </div>
+  </div>`;
+}
+
+function togCl(i){S.cl[i]=!S.cl[i];sv();render();}
+
+async function doFin(){
+  saveScenes();sv();
+  if(!KEY){S.ai.finalErr='Anna ensin API-avain.';sv();render();return;}
+  S.ld.fin=true;S.ai.final='';S.ai.finalErr='';sv();render();
+  const scenes=S.scenes.map(sc=>{
+    const sh=sc.shots.map((s,i)=>`  ${sc.id}.${i+1} [${s.koko}]: ${s.sis} | "${s.aani}" | ${s.huom}`).join('\n');
+    return `Kohtaus ${sc.id}: ${sc.nimi}\n${sh}`;
+  }).join('\n\n');
+  try{
+    const txt=await callAI(`Analysoi opetusvideokäsikirjoitus perusteellisesti Mayerin 12 periaatteen valossa. Suomeksi, syvällisesti, kannustavasti.
+
+Nimi: ${S.p.nimi} | Kohderyhmä: ${S.p.kohde} | Tavoite: ${S.p.tavoite} | Kesto: ${S.p.kesto} min
+Synopsis: ${S.syn.ydin} | Rakenne: ${S.syn.etene}
+${scenes}
+Tarkistuslista: ${S.cl.filter(Boolean).length}/12 kohtaa valittuna
+
+Anna analyysi tässä rakenteessa:
+
+## Vahvuudet
+Mitkä toteutuvat erityisen hyvin?
+
+## Mayerin 12 periaatetta
+Jokaiselle: TOTEUTUU HYVIN / OSITTAIN / VAATII HUOMIOTA + lyhyt perustelu
+1. Johdonmukaisuus
+2. Merkitseminen
+3. Päällekkäisyys
+4. Tilallinen läheisyys
+5. Ajallinen läheisyys
+6. Osittaminen
+7. Esiharjoittelu
+8. Modaliteetti
+9. Multimedia
+10. Personointi
+11. Ääniperiaate
+12. Kuvaperiaate
+
+## Top 3 parannusehdotusta tärkeysjärjestyksessä
+
+## Kokonaisarvio`,1500);
+    S.ai.final=txt;
+  }catch(ex){S.ai.finalErr='Virhe: '+ex.message;}
+  S.ld.fin=false;sv();render();
+}
+
+function v(id){const el=document.getElementById(id);return el?el.value:'';}
+function e(s){if(!s)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+render();
+</script>
+</body>
+</html>
