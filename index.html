@@ -273,37 +273,37 @@ function pgG(){
 async function genScript(){
   const g=S.g;
   g.aihe=v('g0');g.taso=v('g1');g.tyyli=v('g2');g.ympa=v('g3');g.muuta=v('g4');
-  if(!KEY){S.ai.genErr='Anna ensin API-avain yläreunan kentässä.';sv();render();return;}
-  if(!g.aihe.trim()){S.ai.genErr='Kirjoita ensin aihe ensimmäiseen kenttään.';sv();render();return;}
+  if(!KEY){S.ai.genErr='Anna ensin API-avain.';sv();render();return;}
+  if(!g.aihe.trim()){S.ai.genErr='Kirjoita aihe ensin.';sv();render();return;}
   S.ld.gen=true;S.ai.genErr='';S.ai.genDone=false;sv();render();
   const p=S.p;
-  const prompt=`Olet pedagogisen opetusvideokäsikirjoituksen asiantuntija. Luo täydellinen käsikirjoitus tiukasti Mayerin 12 multimediaoppimisen periaatetta noudattaen.
-
-PERUSTIEDOT:
-Videon nimi: ${p.nimi||g.aihe}
-Kohderyhmä: ${p.kohde||'liikunnanopiskelijat'}
-Oppimistavoite: ${p.tavoite||'opiskelija oppii aiheen perusteet'}
-Kesto: ${p.kesto||5} min
-Aihe tarkemmin: ${g.aihe}
-Tietotaso: ${g.taso}
-Tyyli: ${g.tyyli}
-Kuvausympäristö: ${g.ympa||'sisätila + grafiikka'}
-Erityistoiveet: ${g.muuta||'-'}
-
-Vastaa VAIN validilla JSON-objektilla ilman mitään muuta tekstiä tai markdown-merkkejä:
-{"synopsis":{"ydin":"...","etene":"...","ympa":"..."},"scenes":[{"id":1,"nimi":"Johdanto","kmin":30,"kmax":45,"shots":[{"id":1,"koko":"PK (puolikuva)","sis":"...","aani":"...","huom":"Mayer: Esiharjoittelu – ..."}]},{"id":2,"nimi":"...","kmin":60,"kmax":120,"shots":[{"id":1,"koko":"GRAFIIKKA","sis":"...","aani":"...","huom":"Mayer: ..."},{"id":2,"koko":"PK (puolikuva)","sis":"...","aani":"...","huom":"Mayer: ..."}]},{"id":3,"nimi":"...","kmin":60,"kmax":120,"shots":[{"id":1,"koko":"LK (lähikuva)","sis":"...","aani":"...","huom":"Mayer: ..."},{"id":2,"koko":"PK (puolikuva)","sis":"...","aani":"...","huom":"Mayer: ..."}]},{"id":5,"nimi":"Yhteenveto","kmin":30,"kmax":45,"shots":[{"id":1,"koko":"GRAFIIKKA","sis":"...","aani":"...","huom":"Mayer: Kertaus – ..."},{"id":2,"koko":"PK (puolikuva)","sis":"...","aani":"...","huom":"Mayer: Kuvaperiaate – ..."}]}]}
-
-Säännöt:
-- Johdanto (id:1) ja Yhteenveto (id:5) aina mukana + 2-3 sisältökohtausta
-- Jokaisessa kohtauksessa 2-4 kuvaa
-- Kuvakoot: YK, KK, PK, PLK, LK, ELK, GRAFIIKKA tai RUUTUKAAPPAUS
-- huom-kenttään: konkreettinen Mayer-periaate nimeltä
-- aani-kenttään: oikea puheteksti lainausmerkeissä käyttäen sinä-muotoa
-- Rakenne: esiharjoittelu johdannossa, osittaminen kohtauksissa, kertaus lopussa`;
+  const sysMsg=[
+    'Luo opetusvideokaskirjoitus Mayerin periaatteiden mukaan.',
+    'Aihe: '+g.aihe,
+    'Tietotaso: '+g.taso,
+    'Tyyli: '+g.tyyli,
+    'Ymparisto: '+(g.ympa||'sisat'),
+    'Tavoite: '+(p.tavoite||'opiskelija oppii'),
+    'Kesto: '+(p.kesto||5)+' min',
+    'Toiveet: '+(g.muuta||'-'),
+    '',
+    'Palauta VAIN validi JSON-objekti. Ei markdownia. Ei muuta tekstia.',
+    'Kayta tata rakennetta:',
+    '{"synopsis":{"ydin":"...","etene":"...","ympa":"..."},"scenes":[',
+    '{"id":1,"nimi":"Johdanto","kmin":30,"kmax":45,"shots":[{"id":1,"koko":"PK","sis":"...","aani":"...","huom":"Mayer: Esiharjoittelu"}]},',
+    '{"id":2,"nimi":"...","kmin":60,"kmax":120,"shots":[{"id":1,"koko":"GRAFIIKKA","sis":"...","aani":"...","huom":"Mayer: Ajallinen laheisyys"},{"id":2,"koko":"PK","sis":"...","aani":"...","huom":"Mayer: Modaliteetti"}]},',
+    '{"id":3,"nimi":"...","kmin":60,"kmax":120,"shots":[{"id":1,"koko":"LK","sis":"...","aani":"...","huom":"Mayer: Merkitseminen"},{"id":2,"koko":"PK","sis":"...","aani":"...","huom":"Mayer: Personointi"}]},',
+    '{"id":5,"nimi":"Yhteenveto","kmin":30,"kmax":45,"shots":[{"id":1,"koko":"GRAFIIKKA","sis":"...","aani":"...","huom":"Mayer: Kertaus"},{"id":2,"koko":"PK","sis":"...","aani":"...","huom":"Mayer: Kuvaperiaate"}]}',
+    ']}'
+  ].join('\n');
 
   try{
-    const txt=await callAI(prompt,2000);
-    const clean=txt.replace(/```json|```/g,'').trim();
+    const txt=await callAI(sysMsg,2500);
+    let clean=txt.trim();
+    const si=clean.indexOf('{');
+    const ei=clean.lastIndexOf('}');
+    if(si!==-1&&ei!==-1)clean=clean.slice(si,ei+1);
+    clean=clean.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,'');
     const parsed=JSON.parse(clean);
     if(parsed.synopsis){
       S.syn={ydin:parsed.synopsis.ydin||'',etene:parsed.synopsis.etene||'',ympa:parsed.synopsis.ympa||''};
@@ -311,7 +311,7 @@ Säännöt:
     if(parsed.scenes&&parsed.scenes.length>0)S.scenes=parsed.scenes;
     S.ai.genDone=true;S.ai.genErr='';
   }catch(ex){
-    S.ai.genErr='Virhe: '+ex.message+'. Tarkista API-avain ja internet-yhteys.';
+    S.ai.genErr='Virhe: '+ex.message+'. Yrita uudelleen.';
   }
   S.ld.gen=false;sv();render();
 }
